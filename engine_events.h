@@ -18,24 +18,31 @@ namespace stdEngineEvents
             case EVENT::Flash:
                 OnFlash(e.getParam());
                 break;
+
             case EVENT::Fullscreen:
                 OnFullscreen(e.getParam());
                 break;
+
             case EVENT::Pictures:
                 OnPicture(e.getParam());
                 break;
+
             case EVENT::musics:
                 OnMusic(e.getParam());
                 break;
+
             case EVENT::musicp:
                 OnMusicPause();
                 break;
+
             case EVENT::hide:
                 OnHide(e.getParam());
                 break;
+
             case EVENT::ending:
                 OnEnding();
                 break;
+                
             default:
                 break;
             }

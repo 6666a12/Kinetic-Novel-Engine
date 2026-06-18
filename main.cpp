@@ -14,6 +14,7 @@
             Screenshot
             Some geometric shapes  
 
+    Special Thanks: CHATGPT, KIMI and DEEPSEEK..
 */
 
 #define STB_IMAGE_IMPLEMENTATION
@@ -39,10 +40,11 @@
 #include "stb_image.h"
 #include "RAII.h"
 #include "Iplayable.h"
+#include "backup.h"
 #include "video_player.h"
 #include "text_decoder.h"
 #include "engine_events.h"
-#include "text_area.h"
+#include "UI_component.h"
 
 #define TITLE "Demo"
 #define WIDTH 1920

@@ -1,3 +1,6 @@
+/*
+    The file defines the Interface of a playable UI component should have.
+*/
 #pragma once
 #include <SDL.h>
 
