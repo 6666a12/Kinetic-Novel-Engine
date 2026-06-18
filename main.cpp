@@ -20,17 +20,14 @@
 
 #ifdef _RELEASE
     #pragma GCC optimize ("O2")
-#else _DEBUG
+#else
     #pragma GCC optimize ("O0")
 #endif
 
-#include "stb_image.h"
-#include "Iplayable.h"
-#include "video_player.h"
-#include "text_decoder.h"
 #include <SDL_ttf.h>
 #include <SDL_main.h>
 #include <cctype>
+#include <cmath>
 #include <fstream>
 #include <functional>
 #include <algorithm>
@@ -39,6 +36,13 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "stb_image.h"
+#include "RAII.h"
+#include "Iplayable.h"
+#include "video_player.h"
+#include "text_decoder.h"
+#include "engine_events.h"
+#include "text_area.h"
 
 #define TITLE "Demo"
 #define WIDTH 1920
@@ -67,21 +71,7 @@ SDL_AudioSpec spec = {
 
 std::unordered_map<std::string, SDL_Color> color_map;
 
-struct SDL_deleter{
-    void operator()(SDL_Texture* t) const { if(t) SDL_DestroyTexture(t); }
-    void operator()(SDL_Window *w) const { if(w) SDL_DestroyWindow(w); }
-    void operator()(SDL_Surface *s) const { if(s) SDL_DestroySurface(s); }
-    void operator()(SDL_Renderer *r) const { if(r) SDL_DestroyRenderer(r); }
-    void operator()(SDL_Mutex *m) const { if(m) SDL_DestroyMutex(m); }
-    void operator()(TTF_Font *f) const { if(f) TTF_CloseFont(f); }
-};
 
-using Texture_ptr = std::unique_ptr<SDL_Texture, SDL_deleter>;
-using Window_ptr = std::unique_ptr<SDL_Window, SDL_deleter>;
-using Surface_ptr = std::unique_ptr<SDL_Surface, SDL_deleter>;
-using Renderer_ptr = std::unique_ptr<SDL_Renderer, SDL_deleter>;
-using Mutex_ptr = std::unique_ptr<SDL_Mutex, SDL_deleter>;
-using Font_ptr = std::unique_ptr<TTF_Font, SDL_deleter>;
 
 /*
     Screen Transition Effect
@@ -378,8 +368,6 @@ public:
     }
 };
 
-
-
 // SIZE: HEIGHT * WIDTH FIXED
 class RenderPage
 {
@@ -392,43 +380,6 @@ public:
 
 
 };
-
-class TextArea : public Iplayable
-{
-protected:
-    // Current Eventlist of the TextArea
-    Text areaText;
-
-    // FullScreen MODE
-    bool isFullScreen = false;
-
-    // Area Opacity
-    double alpha = 1.0f;
-
-public:
-    TextArea() = default;
-    ~TextArea() override { Close(); }
-
-    bool Update(double dt) override
-    {
-        
-    }
-
-    void Render(SDL_Renderer* ren, const SDL_FRect* dstRect = nullptr) override
-    {
-
-    }
-
-    bool IsPlaying() const override{}
-
-    void Close() override
-    {
-
-    }
-  
-};
-
-
 
 /*
     void Render_selectbox(SDL_Renderer *ren, SDL_Color color)
@@ -443,7 +394,10 @@ public:
 int main(int argc, char* argv[])
 {
     TTF_Init();
-    TTF_Font* fon = TTF_OpenFont("font.ttf", 12);
+    TTF_Font* fon = TTF_OpenFont("font.ttf", 28);
+    if (!fon) fon = TTF_OpenFont("C:/Windows/Fonts/msyh.ttc", 28);
+    if (!fon) fon = TTF_OpenFont("C:/Windows/Fonts/simhei.ttf", 28);
+    if (!fon) fon = TTF_OpenFont("C:/Windows/Fonts/arial.ttf", 28);
     Font_ptr font(fon);
 
     Assetmanager Assets = Assetmanager();
@@ -467,10 +421,28 @@ int main(int argc, char* argv[])
     SDL_SetRenderVSync(rend, 1);
     Renderer_ptr ren(rend);
 
-     // Activate alpha
+    TextArea textArea;
+    textArea.SetFont(font.get());
+    textArea.SetArea(SDL_FRect{120.0f, 760.0f, 1680.0f, 240.0f});
+    textArea.SetSpeed(36.0);
+
+// TextArea demodata
+    stdData demoData;
+    Text demoPage1;
+    demoPage1.speaker = "Narrator";
+    demoPage1.eventList.emplace_back(std::string("这是 TextArea 的逐字渲染测试。按 Space 可以暂停或继续，点击文本框可以跳过当前页。"));
+    demoPage1.eventList.emplace_back(std::vector<TextEvent>{TextEvent(EVENT::Pictures, 1), TextEvent(EVENT::hide, 1)});
+    demoPage1.eventList.emplace_back(std::string("事件会按照文本中的顺序触发，然后继续显示后面的文字。"));
+    demoData[{1, 1}] = std::move(demoPage1);
+
+    Text demoPage2;
+    demoPage2.speaker = "System";
+    demoPage2.eventList.emplace_back(std::string("第二页用于验证翻页。页面结束后，左方向键回到上一页，右方向键进入下一页。按 V 仍然可以切换视频播放。"));
+    demoData[{1, 2}] = std::move(demoPage2);
+
+    textArea.LoadData(demoData, {1, 1});
 
     VideoPlayer player;
-    bool playingVideo = false;
     Uint64 lastTick = SDL_GetTicks();
     
     SDL_Event e;
@@ -483,17 +455,21 @@ int main(int argc, char* argv[])
                 break;
             }
 
+            TextArea::Action textAction = textArea.HandleEvent(e);
+            if (textAction != TextArea::Action::None)
+            {
+                continue;
+            }
+
             if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_V)
             {
-                if (!playingVideo)
+                if (!player.IsPlaying())
                 {
-                    if (player.Open("霜月はるか,riya - 廻る世界で.mp4", ren.get(), aus))
-                        playingVideo = true;
+                    player.Open("霜月はるか,riya - 廻る世界で.mp4", ren.get(), aus);
                 }
                 else
                 {
                     player.Close();
-                    playingVideo = false;
                 }
             }
         }
@@ -502,14 +478,18 @@ int main(int argc, char* argv[])
         double dt = (nowTick - lastTick) / 1000.0;
         lastTick = nowTick;
 
-        if (playingVideo)
+        textArea.Update(dt);
+
+        SDL_SetRenderDrawColor(ren.get(), 0, 0, 0, 255);
+        SDL_RenderClear(ren.get());
+
+        if (player.IsPlaying())
         {
-            playingVideo = player.Update(dt);
-            SDL_SetRenderDrawColor(ren.get(), 0, 0, 0, 255);
-            SDL_RenderClear(ren.get());
+            player.Update(dt);
             player.Render(ren.get());
         }
 
+        textArea.Render(ren.get());
         SDL_RenderPresent(ren.get());
 
     }
@@ -680,4 +660,3 @@ void FillCircleAA(SDL_Surface* surf, float cx, float cy, float r, Uint8 cr, Uint
         }
     }
 }
-

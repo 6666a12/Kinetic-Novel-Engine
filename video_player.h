@@ -1,6 +1,7 @@
 #pragma once
 
 #include "Iplayable.h"
+#include "RAII.h"
 
 #include <SDL3/SDL.h>
 #include <atomic>
@@ -21,23 +22,8 @@ extern "C" {
 #include <libswresample/swresample.h>
 #include <libswscale/swscale.h>
 }
+\
 
-struct FFmpeg_deleter
-{
-    void operator()(AVFormatContext* p) const { if (p) avformat_close_input(&p); }
-    void operator()(AVCodecContext* p) const { if (p) avcodec_free_context(&p); }
-    void operator()(AVFrame* p) const { if (p) av_frame_free(&p); }
-    void operator()(SwsContext* p) const { if (p) sws_freeContext(p); }
-    void operator()(SwrContext* p) const { if (p) swr_free(&p); }
-    void operator()(AVPacket* p) const { if (p) av_packet_free(&p); }
-};
-
-using AVFormatContext_ptr = std::unique_ptr<AVFormatContext, FFmpeg_deleter>;
-using AVCodecContext_ptr = std::unique_ptr<AVCodecContext, FFmpeg_deleter>;
-using AVFrame_ptr = std::unique_ptr<AVFrame, FFmpeg_deleter>;
-using SwsContext_ptr = std::unique_ptr<SwsContext, FFmpeg_deleter>;
-using SwrContext_ptr = std::unique_ptr<SwrContext, FFmpeg_deleter>;
-using AVPacket_ptr = std::unique_ptr<AVPacket, FFmpeg_deleter>;
 
 struct VideoFrame
 {

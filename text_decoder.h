@@ -33,6 +33,7 @@
 
 // Fantastic? C++
 #define stdEvent std::vector<std::variant<std::string, std::vector<TextEvent>>>
+#define stdData std::unordered_map<chapterPage, Text>
 
 struct chapterPage
 {
@@ -40,6 +41,15 @@ struct chapterPage
     int page;
 
     bool operator==(const chapterPage& other) const = default;
+    bool operator<(const chapterPage& a) const {
+        return this->chapter < a.chapter ||
+               (this->chapter == a.chapter && this->page < a.page);
+    }
+
+    bool operator>(const chapterPage& a) const {
+        return this->chapter > a.chapter ||
+               (this->chapter == a.chapter && this->page > a.chapter);
+    }
 };
 
 enum class EVENT
@@ -65,9 +75,9 @@ public:
     TextEvent(EVENT ev, int intervalMs = 0)
         : e(ev), interval(intervalMs) {}
 
-    EVENT getEvent(){ return this->e; }
-    int   getParam(){ return this->interval; }
-    
+    EVENT getEvent() const { return this->e; }
+    int   getParam() const { return this->interval; }
+
 };
 
 struct Text
@@ -215,7 +225,7 @@ namespace TextDecoderImpl
     }
 }
 
-std::unordered_map<chapterPage, Text> TextDecoder(const char* path)
+stdData TextDecoder(const char* path)
 {
     // Result container
     std::unordered_map<chapterPage, Text> result;
@@ -260,7 +270,7 @@ std::unordered_map<chapterPage, Text> TextDecoder(const char* path)
             scc(next != std::string::npos, "File format error, please check your file! :");
 
             std::string speaker = page.substr(1, next - 1);
-            if(speaker != "0" || !speaker.empty()) entry.speaker = std::move(speaker);
+            if(speaker != "0" && !speaker.empty()) entry.speaker = std::move(speaker);
             entry.eventList = TextDecoderImpl::ParseEventList(TextDecoderImpl::Trim(page.substr(next + 1)));
         }
 
