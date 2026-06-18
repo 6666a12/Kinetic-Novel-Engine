@@ -1,3 +1,8 @@
+/*
+    RAII.h
+    
+    Resource RAII
+*/
 #pragma once
 #include <SDL.h>
 #include <SDL_ttf.h>
