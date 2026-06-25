@@ -8,8 +8,8 @@
     '|b{mode}|'    stands for Flashbang effect
     '|f|'          stands for FULLSCREEN TEXT MOD
     '|p{number}|'  stands for picture switch
-    '|m{number}|'  stands for music switch
-    '|mp|'         stands for music pause
+    '|v{number}|'  stands for video switch
+    '|m{number}|'  stands for music switch number = 0 stands for pause
     '|h{number}|'  stands for hide the TextArea and reshow after {interval} msec
     All number and mode have default value.
 
@@ -28,8 +28,9 @@
 #include <variant>
 #include <string>
 #include <vector>
+#include <map>
 #include <unordered_map>
-#include "scc.h"
+#include "core/scc.h"
 
 // Fantastic? C++
 #define stdEvent std::vector<std::variant<std::string, std::vector<TextEvent>>>
@@ -48,7 +49,7 @@ struct chapterPage
 
     bool operator>(const chapterPage& a) const {
         return this->chapter > a.chapter ||
-               (this->chapter == a.chapter && this->page > a.chapter);
+               (this->chapter == a.chapter && this->page > a.page);
     }
 };
 
@@ -58,10 +59,21 @@ enum class EVENT
     Flash = 1,
     Fullscreen = 2,
     Pictures = 3,
-    musics = 4,
-    musicp = 5,
+    Videos = 4,
+    music = 5,
     hide = 6,
     ending = 7
+};
+
+std::map<char, EVENT> eventTable = {
+    {'0', EVENT::none},
+    {'b', EVENT::Flash},
+    {'f', EVENT::Fullscreen},
+    {'p', EVENT::Pictures},
+    {'v', EVENT::Videos},
+    {'m', EVENT::music},
+    {'h', EVENT::hide}
+
 };
 
 class TextEvent
@@ -147,37 +159,12 @@ namespace TextDecoderImpl
                 ++j;
             }
 
-            int interval = num.empty() ? 0 : std::stoi(num);
-
-            switch(ch){
-                case '0':
-                    result.emplace_back(EVENT::ending, interval);
-                    break;
-
-                case 'b':
-                    result.emplace_back(EVENT::Flash, interval);
-                    break;
-
-                case 'f':
-                    result.emplace_back(EVENT::Fullscreen, interval);
-                    break;
-
-                case 'p':
-                    result.emplace_back(EVENT::Pictures, interval);
-                    break;
-
-                case 'm':
-                    if(j < block.size() && block[j] == 'p' && ++j) result.emplace_back(EVENT::musicp, 0);
-                    else result.emplace_back(EVENT::musics, interval);
-                    
-                    break;
-
-                case 'h':
-                    result.emplace_back(EVENT::hide, interval);
-                    
-            }
+            int param = num.empty() ? 0 : std::stoi(num);
+            result.emplace_back(eventTable[ch], param);
+  
             i = j;
         }
+        
         return result;
 
     }

@@ -1,10 +1,10 @@
 #pragma once
 #include <SDL.h>
 #include <SDL_ttf.h>
-#include "RAII.h"
-#include "Iplayable.h"
-#include "engine_events.h"
-#include "text_decoder.h"
+#include "core/RAII.h"
+#include "core/Iplayable.h"
+#include "script/engine_events.h"
+#include "script/text_decoder.h"
 
 namespace TextAreaImpl
 {
@@ -254,15 +254,6 @@ namespace TextAreaImpl
 
 class TextArea : public Iplayable
 {
-public:
-    enum class Action
-    {
-        None,
-        Consumed,
-        Skip,
-        PrevPage,
-        NextPage
-    };
 
 protected:
     enum class PlayState
@@ -270,7 +261,8 @@ protected:
         Stopped,
         Playing,
         Paused,
-        Finished
+        Finished,
+        Hide
     };
 
     Text areaText;
@@ -340,6 +332,7 @@ protected:
             if (textEvent.getEvent() == EVENT::hide)
             {
                 hideTimer = std::max(0.0, textEvent.getParam() / 1000.0);
+                playState = PlayState::Hide;
             }
         }
     }
@@ -449,28 +442,25 @@ protected:
     }
 
     // Skip Action confirm
-    Action ToggleAdvance()
+    void ToggleAdvance()
     {
-        if (hideTimer > 0.0) return Action::None;
-        if (playState == PlayState::Stopped) return Action::None;
+        if (hideTimer > 0.0) return;
+        if (playState == PlayState::Stopped) return;
 
         if (!IsFinished())
         {
             SkipToPageEnd();
-            return Action::Skip;
+            return;
         }
 
-        return NextPage() ? Action::NextPage : Action::None;
+       NextPage();
     }
 
     // Pause Action confirm
-    Action TogglePause()
+    void TogglePause()
     {
         if (playState == PlayState::Playing) playState = PlayState::Paused;
         else if (playState == PlayState::Paused) playState = PlayState::Playing;
-        else return Action::None;
-
-        return Action::Consumed;
     }
 
 public:
@@ -548,13 +538,14 @@ public:
         return FindAdjacentPage(prev, false) && LoadPage(prev, true);
     }
 
-    Action HandleEvent(const SDL_Event& e)
+    void HandleEvent(const SDL_Event& e)
     {
         if (e.type == SDL_EVENT_MOUSE_BUTTON_UP && e.button.button == SDL_BUTTON_LEFT)
         {
             if (!TextAreaImpl::ifcontain(areaRect, e.button.x, e.button.y))
-                return Action::None;
-            return ToggleAdvance();
+                return;
+            ToggleAdvance();
+            return;
         }
 
         if (e.type == SDL_EVENT_KEY_DOWN)
@@ -565,13 +556,13 @@ public:
             if (IsFinished())
             {
                 if (e.key.key == SDLK_LEFT)
-                    return PrevPage() ? Action::PrevPage : Action::None;
-                if (e.key.key == SDLK_RIGHT)
-                    return NextPage() ? Action::NextPage : Action::None;
+                    PrevPage();
+                else if (e.key.key == SDLK_RIGHT)
+                    NextPage();
+                return;
             }
         }
 
-        return Action::None;
     }
 
     bool Update(double dt) override
@@ -583,6 +574,7 @@ public:
             hideTimer -= dt;
             if (hideTimer > 0.0) return false;
             hideTimer = 0.0;
+            playState = PlayState::Playing;
         }
 
         if (playState == PlayState::Stopped || playState == PlayState::Finished) return false;
@@ -633,6 +625,8 @@ public:
 
         return IsPlaying();
     }
+
+    bool Update(SDL_Event& e) override{ return false; }
 
     void Render(SDL_Renderer* ren, const SDL_FRect* dstRect = nullptr) override
     {
@@ -690,7 +684,7 @@ public:
 
     bool IsPlaying() const override
     {
-        return playState == PlayState::Playing || playState == PlayState::Paused;
+        return playState != PlayState::Hide;
     }
 
     void Close() override

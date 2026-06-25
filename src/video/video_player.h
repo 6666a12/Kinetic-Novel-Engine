@@ -1,9 +1,14 @@
+/*
+    video_player.h
+
+    Video player component with ffmpeg
+*/
 #pragma once
 
-#include "Iplayable.h"
-#include "RAII.h"
+#include "core/Iplayable.h"
+#include "core/RAII.h"
 
-#include <SDL3/SDL.h>
+#include <SDL.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -36,11 +41,13 @@ public:
     VideoPlayer() = default;
     ~VideoPlayer() override { Close(); }
 
+    void setPath(const char* path){ sourceFilename = path ? path : "";}
+
     bool Open(const char* filename, SDL_Renderer* renderer, SDL_AudioStream* stream)
     {
         Close();
 
-        sourceFilename = filename ? filename : "";
+        sourceFilename = filename ? filename : sourceFilename;
         audioStream = stream;
         if (audioStream)
             SDL_ClearAudioStream(audioStream);
@@ -168,6 +175,17 @@ public:
         }
 
         return true;
+    }
+
+    bool Update(SDL_Event& e) override { return false; }
+
+    void HandleEvent(const char* path,const SDL_Event& e, SDL_AudioStream* aus, SDL_Renderer* ren)
+    {
+        if (e.type == SDL_EVENT_KEY_DOWN && e.key.key == SDLK_V)
+        {
+            if (!IsPlaying()) Open(path, ren, aus);
+            else Close();    
+        }
     }
 
     void Render(SDL_Renderer* renderer, const SDL_FRect* dstRect = nullptr) override
