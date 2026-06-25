@@ -100,6 +100,7 @@ public:
 */
 
 #include "scene/title_scene.h"
+#include "scene/playing_scene.h"
 
 
 

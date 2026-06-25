@@ -76,14 +76,18 @@ public:
     buttonS(float x, float y, float w, float h, SDL_Color color):
         button{x, y, w, h, color} {}
 
-    void SetString(TTF_Font* font1, SDL_Renderer* ren, const std::string& str)
+    bool SetString(TTF_Font* font1, SDL_Renderer* ren, const std::string& str)
     {
-        if(!font1 || !ren) return;
-        textLabel = str;
-        SDL_Surface* s = TTF_RenderText_Blended(font1, str.c_str(), str.size(), {255, 255, 255, 255});
-        if(!s) return;
-        content = Texture_ptr(SDL_CreateTextureFromSurface(ren, s));
+        if(!font1 || !ren) return false;
+        textLabel = str.empty() ? textLabel : str;
+
+        SDL_Surface* s = TTF_RenderText_Blended(font1, textLabel.c_str(), textLabel.size(), {255, 255, 255, 255});
+        if(!s) return false;
+
+        SDL_Texture* texture0 = SDL_CreateTextureFromSurface(ren, s);
+        content = Texture_ptr(std::move(texture0));
         SDL_DestroySurface(s);
+        return true;
     }
 
     bool Update(SDL_Event& e) override

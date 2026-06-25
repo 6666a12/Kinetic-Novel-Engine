@@ -46,7 +46,7 @@ public:
         playing = true;
         finished = false;
 
-        decodeThread = std::thread(&AudioChannel::DecodeLoop, this, std::string(path));
+        decodeThread = std::jthread(&AudioChannel::DecodeLoop, this, std::string(path));
         return true;
     }
 
@@ -63,8 +63,7 @@ public:
         stopRequested = true;
         playing = false;
 
-        if (decodeThread.joinable())
-            decodeThread.join();
+        decodeThread = {};
 
         if (stream)
         {
@@ -113,7 +112,7 @@ private:
     SDL_AudioStream* stream = nullptr;
     Fader gainFader{1.0};
     float baseGain = 1.0f;
-    std::thread decodeThread;
+    std::jthread decodeThread;
 
     void DecodeLoop(const std::string& path)
     {

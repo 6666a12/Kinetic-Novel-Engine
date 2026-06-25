@@ -72,8 +72,8 @@ public:
         lastQueuedVideoPts.store(0.0);
 
         if (audioEnabled)
-            audioThread = std::thread(&VideoPlayer::AudioThreadFunc, this);
-        videoThread = std::thread(&VideoPlayer::VideoThreadFunc, this);
+            audioThread = std::jthread(&VideoPlayer::AudioThreadFunc, this);
+        videoThread = std::jthread(&VideoPlayer::VideoThreadFunc, this);
         return true;
     }
 
@@ -82,10 +82,8 @@ public:
         running = false;
         frameQueueCond.notify_all();
 
-        if (audioThread.joinable())
-            audioThread.join();
-        if (videoThread.joinable())
-            videoThread.join();
+        audioThread = {};
+        videoThread = {};
 
         playing = false;
 
@@ -244,8 +242,8 @@ private:
     std::mutex frameQueueMutex;
     std::condition_variable frameQueueCond;
 
-    std::thread audioThread;
-    std::thread videoThread;
+    std::jthread audioThread;
+    std::jthread videoThread;
     std::atomic<bool> running{false};
     std::atomic<bool> playing{false};
     std::atomic<bool> audioEnabled{false};
