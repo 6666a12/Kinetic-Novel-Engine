@@ -1,4 +1,8 @@
 *.mp4
-.vscode/
 *.exe
+
+.vscode/
 md/
+
+AGENTS.md
+opencode.json
