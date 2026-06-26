@@ -17,6 +17,7 @@
     Special Thanks: CHATGPT, KIMI and DEEPSEEK..
 */
 
+#define _RELEASE
 #define STB_IMAGE_IMPLEMENTATION
 
 #ifdef _RELEASE
@@ -37,6 +38,7 @@
 #include <string>
 #include <vector>
 #include <unordered_map>
+#include "third-party/glad/glad.h"
 #include "core/RAII.h"
 #include "core/curve.h"
 #include "core/Iplayable.h"
@@ -74,19 +76,7 @@ class textbox
 {
 protected:
     std::string str;
-
-};
-
-// SIZE: HEIGHT * WIDTH FIXED
-class RenderPage
-{
-protected:
-    std::vector<UI_Component> UI_elements;
-
-public:
-
-    void update();
-    void render();
+    const std::function<double(double)> curv;
 
 };
 
@@ -169,6 +159,7 @@ int main(int argc, char* argv[])
         sceneManager.Render(ren.get());
         SDL_RenderPresent(ren.get());
     }
+    
     audioManager.Close();
     SDL_DestroyAudioStream(videoStream);
     SDL_Quit();

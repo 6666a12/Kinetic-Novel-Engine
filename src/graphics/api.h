@@ -1,7 +1,7 @@
 #pragma once
 #define STB_IMAGE_IMPLEMENTATION
 
-#include "core/stb_image.h"
+#include "third-party/stb_image.h"
 #include "core/scc.h"
 #include <algorithm>
 #include <SDL.h>
